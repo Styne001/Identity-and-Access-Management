@@ -11,6 +11,15 @@ app = Flask(__name__)
 setup_db(app)
 CORS(app)
 
+def after_request(response):
+        response.headers.add(
+            "Access-Control-Allow-Headers", "Content-Type,Authorization,true"
+        )
+        response.headers.add(
+            "Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS"
+        )
+        return response
+
 '''
 @TODO uncomment the following line to initialize the datbase
 !! NOTE THIS WILL DROP ALL RECORDS AND START YOUR DB FROM SCRATCH
@@ -28,7 +37,17 @@ CORS(app)
     returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
         or appropriate status code indicating reason for failure
 '''
-
+@app.route('/drinks')
+@requires_auth('get:drinks')
+# Function to get drinks from the database
+def get_drinks():
+    # Query the database to get all drinks
+    drinks = Drink.query,all()
+    formatted_drinks = [drink.short() for drink in drinks]
+    return jsonify({
+        'success': True,
+        'drinks': formatted_drinks
+    })
 
 '''
 @TODO implement endpoint
@@ -39,6 +58,17 @@ CORS(app)
         or appropriate status code indicating reason for failure
 '''
 
+@app.route('/drinks-details')
+@requires_auth('get:drinks-detail')
+# Function to get drinks from the database
+def get_drinks_details():
+    # Query the database to get all drinks
+    drinks = Drink.query,all()
+    formatted_drinks = [drink.long() for drink in drinks]
+    return jsonify({
+        'success': True,
+        'drinks': formatted_drinks
+    })
 
 '''
 @TODO implement endpoint
@@ -50,6 +80,26 @@ CORS(app)
         or appropriate status code indicating reason for failure
 '''
 
+@app.route('/drinks')
+@requires_auth('post:drinks', methods=['POST'])
+# Function to add drinks to the database
+def create_drink():
+    body = request.get_json()
+    #Get the new drink; title and reciepe
+    new_title = body.get("title")
+    new_reciepe = body.get("reciepe")
+
+    try:
+        drink = Drink(title=new_title, reciepe=new_reciepe)
+        drink.insert()
+        formatted_drinks = [drink.long()]
+
+        return jsonify({
+        'success': True,
+        'drinks': formatted_drinks
+        })
+    except Exception:
+        abort(422)
 
 '''
 @TODO implement endpoint
