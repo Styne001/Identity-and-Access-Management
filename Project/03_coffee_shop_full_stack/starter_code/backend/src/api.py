@@ -219,13 +219,13 @@ def unprocessable(error):
 @TODO implement error handler for 404
     error handler should conform to general task above
 '''
-@app.errorhandler(422)
+@app.errorhandler(404)
 def not_found(error):
     return jsonify({
         "success": False,
         "error": 422,
         "message": "resource not found"
-    }), 422
+    }), 404
 
 '''
 @TODO implement error handler for AuthError
