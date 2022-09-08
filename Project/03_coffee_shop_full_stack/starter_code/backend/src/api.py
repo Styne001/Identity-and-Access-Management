@@ -17,11 +17,7 @@ CORS(app)
 !! NOTE THIS MUST BE UNCOMMENTED ON FIRST RUN
 !! Running this funciton will add one
 '''
-<<<<<<< Updated upstream
-# db_drop_and_create_all()
-=======
 db_drop_and_create_all()
->>>>>>> Stashed changes
 
 # ROUTES
 '''
@@ -32,9 +28,6 @@ db_drop_and_create_all()
     returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
         or appropriate status code indicating reason for failure
 '''
-<<<<<<< Updated upstream
-
-=======
 @app.route('/drinks')
 #@requires_auth('get:drinks')
 # Function to get drinks with thier IDs, title and short reciepe from the database
@@ -51,7 +44,6 @@ def get_drinks():
         })
     except Exception:
         abort(422)
->>>>>>> Stashed changes
 
 '''
 @TODO implement endpoint
@@ -62,8 +54,6 @@ def get_drinks():
         or appropriate status code indicating reason for failure
 '''
 
-<<<<<<< Updated upstream
-=======
 @app.route('/drinks-detail')
 #@requires_auth('get:drinks-detail')
 # Function to get drinks with thier IDs and their reciepe from the database
@@ -80,7 +70,6 @@ def get_drinks_detail():
         })
     except Exception:
         abort(422)
->>>>>>> Stashed changes
 
 '''
 @TODO implement endpoint
@@ -92,8 +81,6 @@ def get_drinks_detail():
         or appropriate status code indicating reason for failure
 '''
 
-<<<<<<< Updated upstream
-=======
 @app.route('/drinks', methods=['POST'])
 #@requires_auth('post:drinks')
 # Function to add drinks to the database
@@ -116,7 +103,6 @@ def create_drink():
         })
     except Exception:
         abort(422)
->>>>>>> Stashed changes
 
 '''
 @TODO implement endpoint
