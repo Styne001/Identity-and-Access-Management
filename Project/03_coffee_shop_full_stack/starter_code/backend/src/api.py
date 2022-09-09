@@ -118,7 +118,7 @@ def create_drink():
 
 
 @app.route('/drinks/<int:drink_id>', methods=['PATCH'])
-# @requires_auth('post:drinks')
+#@requires_auth('patch:drinks')
 # Function to update detail of existing drink
 def update_drink(drink_id):
 
@@ -154,7 +154,7 @@ def update_drink(drink_id):
 '''
 
 @app.route('/drinks/<int:drink_id>', methods=['DELETE'])
-# @requires_auth('post:drinks')
+#@requires_auth('delete:drinks')
 # Function to update detail of existing drink
 def delete_drink(drink_id):
 
