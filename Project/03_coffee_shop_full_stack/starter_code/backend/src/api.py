@@ -29,9 +29,10 @@ db_drop_and_create_all()
         or appropriate status code indicating reason for failure
 '''
 @app.route('/drinks')
-#@requires_auth('get:drinks')
-# Function to get drinks with thier IDs, title and short reciepe from the database
-def get_drinks():
+# requires permission get:drinks
+@requires_auth('get:drinks')
+# Function to get drink title and reciepe[color and parts] from the database
+def get_drinks(jwt):
     try:
         # Query the database to get drinks
         drinks = Drink.query.all()
@@ -55,9 +56,10 @@ def get_drinks():
 '''
 
 @app.route('/drinks-detail')
-#@requires_auth('get:drinks-detail')
-# Function to get drinks with thier IDs and their reciepe from the database
-def get_drinks_detail():
+# requires permission get:drinks-detail
+@requires_auth('get:drinks-details')
+# Function to get drink title and reciepe[color, ingredients and parts] from the database
+def get_drinks_detail(jwt):
     try:
         # Query the database to get all drinks
         drinks = Drink.query.all()
@@ -82,27 +84,29 @@ def get_drinks_detail():
 '''
 
 @app.route('/drinks', methods=['POST'])
-#@requires_auth('post:drinks')
+# Requires permision post:drinks to add drinks to the database 
+@requires_auth('post:drinks')
 # Function to add drinks to the database
-def create_drink():
+def create_drink(jwt):
     body = request.get_json()
     # Get the new drink; title and reciepe
     new_title = body.get("title")
-    new_reciepe = body.get("reciepe")
+    ingredients = body.get("recipe")
 
-    try:
-        new_drink = Drink(title=new_title, reciepe=new_reciepe)
-        # Use the insert function to add new_drink to database
-        new_drink.insert()
-        # format new drink to show new_drink tite, id and reciepe
-        formatted_drinks = [new_drink.long()]
+    #try:
+    new_drink = Drink(title=new_title, recipe=ingredients)
+    print(type(new_drink))
+    # Use the insert function to add new_drink to database
+    new_drink.insert()
+    # format new drink to show new_drink tite, id and reciepe
+    formatted_drinks = [new_drink.long()]
 
-        return jsonify({
-        'success': True,
-        'drinks': formatted_drinks
-        })
-    except Exception:
-        abort(422)
+    return jsonify({
+    'success': True,
+    'drinks': formatted_drinks
+    })
+    #except Exception:
+        #abort(422)
 
 '''
 @TODO implement endpoint
@@ -118,9 +122,10 @@ def create_drink():
 
 
 @app.route('/drinks/<int:drink_id>', methods=['PATCH'])
-#@requires_auth('patch:drinks')
+# Requires permission patch:drinks to update drink details
+@requires_auth('patch:drinks')
 # Function to update detail of existing drink
-def update_drink(drink_id):
+def update_drink(drink_id, jwt):
 
     body = request.get_json()
 
@@ -129,14 +134,16 @@ def update_drink(drink_id):
         if drink is None:
             abort(404)
 
-        if 'title' and 'reciepe' in body:
+        if 'recipe' in body:
             drink.title = str(body.get('title'))
-            drink.reciepe = str(body.get('reciepr'))
+            drink.recipe = str(body.get('recipe'))
             drink.update()
+
+        formatted_drink = [drink.long()]
         
         return({
             'success': True,
-            'drink': drink
+            'drink': formatted_drink
         })
 
     except Exception:
@@ -154,9 +161,10 @@ def update_drink(drink_id):
 '''
 
 @app.route('/drinks/<int:drink_id>', methods=['DELETE'])
-#@requires_auth('delete:drinks')
-# Function to update detail of existing drink
-def delete_drink(drink_id):
+# Requires permission delete:drinks to delete a drink from the database
+@requires_auth('delete:drinks')
+# Function to delete drink
+def delete_drink(drink_id, jwt):
 
     try:
         drink = Drink.query.filter(Drink.id == drink_id).one_or_none()
@@ -223,4 +231,4 @@ def authentication_error(auth_error):
         "success": False,
         "error": auth_error.status_code,
         "message": auth_error.error
-    }), 401
+    }), 403
