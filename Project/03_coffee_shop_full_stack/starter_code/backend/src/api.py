@@ -39,15 +39,20 @@ def after_request(response):
 '''
 @app.route('/drinks')
 @requires_auth('get:drinks')
-# Function to get drinks from the database
-def get_drinks():
-    # Query the database to get all drinks
-    drinks = Drink.query,all()
-    formatted_drinks = [drink.short() for drink in drinks]
-    return jsonify({
-        'success': True,
-        'drinks': formatted_drinks
-    })
+# Function to get drink title and reciepe[color and parts] from the database
+def get_drinks(payload):
+    try:
+        # Query the database to get drinks
+        drinks = Drink.query.order_by(Drink.title).all()
+        # formatting to details of drinks with their ids, title and short reciepe
+        formatted_drinks = [drink.short() for drink in drinks]
+        #return success and formatted drinks
+        return jsonify({
+            'success': True,
+            'drinks': formatted_drinks
+        })
+    except Exception:
+        abort(422)
 
 '''
 @TODO implement endpoint
@@ -58,17 +63,23 @@ def get_drinks():
         or appropriate status code indicating reason for failure
 '''
 
-@app.route('/drinks-details')
-@requires_auth('get:drinks-detail')
-# Function to get drinks from the database
-def get_drinks_details():
-    # Query the database to get all drinks
-    drinks = Drink.query,all()
-    formatted_drinks = [drink.long() for drink in drinks]
-    return jsonify({
-        'success': True,
-        'drinks': formatted_drinks
-    })
+@app.route('/drinks-detail')
+# requires permission get:drinks-detail
+@requires_auth('get:drinks-details')
+# Function to get drink title and reciepe[color, ingredients and parts] from the database
+def get_drinks_detail(payload):
+    try:
+        # Query the database to get all drinks
+        drinks = Drink.query.all()
+        # formatting to get details of drinks with their ids, title and reciepe
+        formatted_drinks = [drink.long() for drink in drinks]
+        # return success and formatted drinks
+        return jsonify({
+            'success': True,
+            'drinks': formatted_drinks
+        })
+    except Exception:
+        abort(422)
 
 '''
 @TODO implement endpoint
@@ -80,26 +91,32 @@ def get_drinks_details():
         or appropriate status code indicating reason for failure
 '''
 
-@app.route('/drinks')
-@requires_auth('post:drinks', methods=['POST'])
+@app.route('/drinks', methods=['POST'])
+@requires_auth('post:drinks')
 # Function to add drinks to the database
-def create_drink():
+def create_drink(payload):
     body = request.get_json()
-    #Get the new drink; title and reciepe
-    new_title = body.get("title")
-    new_reciepe = body.get("reciepe")
+    # Get the new drink; title and reciepe
+    req_title = body.get("title", None)
+    req_recipe = json.dumps(body.get("recipe", None))
 
     try:
-        drink = Drink(title=new_title, reciepe=new_reciepe)
-        drink.insert()
-        formatted_drinks = [drink.long()]
+
+        new_drink = Drink(title=req_title, recipe=req_recipe)
+        print(type(new_drink))
+        # Use the insert function to add new_drink to database
+        new_drink.insert()
+        # format new drink to show new_drink tite, id and reciepe
+        formatted_drinks = [new_drink.long()]
 
         return jsonify({
-        'success': True,
-        'drinks': formatted_drinks
+            'success': True,
+            'drinks': formatted_drinks
         })
     except Exception:
         abort(422)
+    
+>>>>>>> Stashed changes
 
 '''
 @TODO implement endpoint
@@ -113,6 +130,33 @@ def create_drink():
         or appropriate status code indicating reason for failure
 '''
 
+@app.route('/drinks/<int:drink_id>', methods=['PATCH'])
+# Requires permission patch:drinks to update drink details
+@requires_auth('patch:drinks')
+# Function to update detail of existing drink
+def update_drink(payload, drink_id):
+
+    body = request.get_json()
+    # Query to get drink with id = drink_id
+    drink_to_update = Drink.query.filter(Drink.id==drink_id).one_or_none()
+
+    if drink_to_update is None:
+        abort(404)
+    # Check if title is in body
+    if 'title' in body:
+        drink_to_update.title = body.get('title', None)
+    # Check if recipe is in body
+    if 'recipe' in body:
+        drink_to_update.recipe = body.get('recipe', None)
+        drink_to_update.update()
+
+    formatted_drink = [drink_to_update.long()]
+    print(type(formatted_drink))
+    return({
+        'success': True,
+        'drink': formatted_drink
+        })
+
 
 '''
 @TODO implement endpoint
@@ -125,6 +169,29 @@ def create_drink():
         or appropriate status code indicating reason for failure
 '''
 
+@app.route('/drinks/<int:drink_id>', methods=['DELETE'])
+# Requires permission delete:drinks to delete a drink from the database
+@requires_auth('delete:drinks')
+# Function to delete drink
+def delete_drink(payload, drink_id):
+
+    try:
+        drink = Drink.query.filter(Drink.id == drink_id).one_or_none()
+
+        if drink is None:
+            abort(404)
+
+        drink.delete()
+        
+        return({
+            'success': True,
+            'delete': drink_id
+        })
+
+    except Exception:
+        abort(422)
+
+>>>>>>> Stashed changes
 
 # Error Handling
 '''
@@ -151,12 +218,25 @@ def unprocessable(error):
                     }), 404
 
 '''
+@app.errorhandler(400)
+def not_found(error):
+    return jsonify({
+        "success": False,
+        "error": 400,
+        "message": "bad request"
+    }), 400
 
 '''
 @TODO implement error handler for 404
     error handler should conform to general task above
 '''
-
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({
+        "success": False,
+        "error": 404,
+        "message": "resource not found"
+    }), 404
 
 '''
 @TODO implement error handler for AuthError
