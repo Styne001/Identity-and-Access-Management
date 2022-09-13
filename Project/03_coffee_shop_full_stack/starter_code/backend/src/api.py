@@ -29,10 +29,8 @@ db_drop_and_create_all()
         or appropriate status code indicating reason for failure
 '''
 @app.route('/drinks')
-# requires permission get:drinks
-@requires_auth('get:drinks')
 # Function to get drink title and reciepe[color and parts] from the database
-def get_drinks(jwt):
+def get_drinks():
     try:
         # Query the database to get drinks
         drinks = Drink.query.all()
@@ -59,7 +57,7 @@ def get_drinks(jwt):
 # requires permission get:drinks-detail
 @requires_auth('get:drinks-details')
 # Function to get drink title and reciepe[color, ingredients and parts] from the database
-def get_drinks_detail(jwt):
+def get_drinks_detail(payload):
     try:
         # Query the database to get all drinks
         drinks = Drink.query.all()
@@ -87,26 +85,25 @@ def get_drinks_detail(jwt):
 # Requires permision post:drinks to add drinks to the database 
 @requires_auth('post:drinks')
 # Function to add drinks to the database
-def create_drink(jwt):
+def create_drink(payload):
     body = request.get_json()
     # Get the new drink; title and reciepe
-    new_title = body.get("title")
-    ingredients = body.get("recipe")
+    try:
+        req_title = body.get('title', None)        
+        req_recipe = json.dumps(body.get('recipe', None))
 
-    #try:
-    new_drink = Drink(title=new_title, recipe=ingredients)
-    print(type(new_drink))
-    # Use the insert function to add new_drink to database
-    new_drink.insert()
-    # format new drink to show new_drink tite, id and reciepe
-    formatted_drinks = [new_drink.long()]
+        new_drink = Drink(title=req_title, recipe=req_recipe)
+        # Use the insert function to add new_drink to database
+        new_drink.insert()
+        # format new drink to show new_drink tite, id and reciepe
+        formatted_drinks = [new_drink.long()]
 
-    return jsonify({
-    'success': True,
-    'drinks': formatted_drinks
-    })
-    #except Exception:
-        #abort(422)
+        return jsonify({
+        'success': True,
+        'drinks': formatted_drinks
+        })
+    except Exception:
+        abort(422)
 
 '''
 @TODO implement endpoint
@@ -125,25 +122,30 @@ def create_drink(jwt):
 # Requires permission patch:drinks to update drink details
 @requires_auth('patch:drinks')
 # Function to update detail of existing drink
-def update_drink(drink_id, jwt):
+def update_drink(payload, drink_id):
 
     body = request.get_json()
 
     try:
-        drink = Drink.query.filter(Drink.id == drink_id).one_or_none()
-        if drink is None:
+        # Query to get drink with id = drink_id
+        drink_to_update = Drink.query.filter(Drink.id == drink_id).one_or_none()
+
+        if drink_to_update is None:
             abort(404)
-
+        # Check if title is in body
+        if 'title' in body:
+            drink_to_update.title = body.get('title')
+        # Check if recipe is in body
         if 'recipe' in body:
-            drink.title = str(body.get('title'))
-            drink.recipe = str(body.get('recipe'))
-            drink.update()
+            drink_to_update.recipe = json.dumps(body.get('recipe'))
+            
+        drink_to_update.update()
 
-        formatted_drink = [drink.long()]
+        formatted_drink = [drink_to_update.long()]
         
         return({
             'success': True,
-            'drink': formatted_drink
+            'drinks': formatted_drink
         })
 
     except Exception:
@@ -164,9 +166,10 @@ def update_drink(drink_id, jwt):
 # Requires permission delete:drinks to delete a drink from the database
 @requires_auth('delete:drinks')
 # Function to delete drink
-def delete_drink(drink_id, jwt):
+def delete_drink(payload, drink_id):
 
     try:
+        # Get drink to delete with drink id
         drink = Drink.query.filter(Drink.id == drink_id).one_or_none()
 
         if drink is None:
@@ -208,6 +211,13 @@ def unprocessable(error):
                     }), 404
 
 '''
+@app.errorhandler(400)
+def not_found(error):
+    return jsonify({
+        "success": False,
+        "error": 400,
+        "message": "resource not found"
+    }), 400
 
 '''
 @TODO implement error handler for 404
@@ -217,7 +227,7 @@ def unprocessable(error):
 def not_found(error):
     return jsonify({
         "success": False,
-        "error": 422,
+        "error": 404,
         "message": "resource not found"
     }), 404
 
@@ -231,4 +241,4 @@ def authentication_error(auth_error):
         "success": False,
         "error": auth_error.status_code,
         "message": auth_error.error
-    }), 403
+    }), auth_error.status_code
